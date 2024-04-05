@@ -121,7 +121,7 @@ boxplot(list(log10(tool_data$Times.Cited..All.Databases+1),
 				log10(ape_nest_data$Times.Cited..All.Databases+1), 
 				log10(corvus_tool_data$Times.Cited..All.Databases+1), 
 				log10(corvus_nest_data$Times.Cited..All.Databases+1)), 
-				col=c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)), border=c(rgb(1,0,0,0.75), rgb(0,0,1,0.75)), las=2, yaxt="n", xaxt="n", 					ylab="Citations", range=1.5)
+				col=c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)), border=c(rgb(1,0,0,0.75), rgb(0,0,1,0.75)), las=2, yaxt="n", xaxt="n", ylab="Citations", range=1.5)
 axis(side=2, at=c(0,1,2,3), labels=c(1,10,100,1000), las=1)			
 axis(side=1, at=c(1.5,3.5,5.5), labels=c("All species", "Great apes", "Corvus"))				
 legend("topright", legend=c("Tool use", "Nest building"), pch=15, cex=1, col=c(rgb(1,0,0,0.75), rgb(0,0,1,0.75)), bty='n')
