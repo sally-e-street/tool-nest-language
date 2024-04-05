@@ -16,3 +16,5 @@ Times.Cited..All.Databases: number of citations per article as recorded in all W
 
 **Street_Hamilton_Healy_Rscript_2024.R** contains R code used to produce the analyses reported in the main text and supplementary material. For further explanation please see the script annotations.
 
+**construction_dictionary.txt** contains the list of words representing 'intelligent' terminology used in article abstacts (for full details, see the Methods section of the paper and the R script). 
+
