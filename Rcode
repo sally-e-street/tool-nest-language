@@ -1,0 +1,481 @@
+#############
+### SETUP ###
+#############
+
+# clear workspace
+rm(list=ls())
+
+# load packages 
+packages<-c("data.table", "tidytext", "SnowballC", "cld3", "pscl") # select packages
+install.packages(packages[!packages %in% rownames(installed.packages())]) # install packages if required
+invisible(lapply(packages, library, character.only=TRUE)) # load packages
+
+# turn off scientific notation
+options(scipen=999)
+
+#################
+### DATA PREP ###
+#################
+
+# load CSV files
+tool_data<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/main/all_tool_results.csv")
+nest_data<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/main/all_nest_results.csv")
+ape_tool_data<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/main/ape_tool_results.csv")
+ape_nest_data<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/main/ape_nest_results.csv")
+corvus_tool_data<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/main/corvus_tool_results.csv")
+corvus_nest_data<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/main/corvus_nest_results.csv")
+
+# check number of rows and columns
+data_files<-list(tool_data, nest_data, ape_tool_data, ape_nest_data, corvus_tool_data, corvus_nest_data) # combine files to a list
+names(data_files)<-c("tool_data", "nest_data", "ape_tool_data", "ape_nest_data", "corvus_tool_data", "corvus_nest_data") # add names
+
+# check number of rows and columns
+sapply(data_files, nrow)
+sapply(data_files, ncol)
+
+# check for and remove duplicates (by article title)
+sapply(data_files, function(x){sum(duplicated(x$Article.Title))}) # number of duplicates
+
+remove_duplicates<-function(data, variable){ # function to remove duplicates (variable in quotes)
+	data$Duplicated<-ifelse(duplicated(data[,variable]), 1, 0) # identify duplicates
+	print(paste(sum(data$Duplicated), "duplicates removed")) # report how many removed
+	result<-subset(data, Duplicated==0) # remove duplicates 
+	return(result) # return result
+}
+
+tool_data<-remove_duplicates(tool_data, "Article.Title")
+nest_data<-remove_duplicates(nest_data, "Article.Title")
+
+data_files<-list(tool_data, nest_data, ape_tool_data, ape_nest_data, corvus_tool_data, corvus_nest_data) # update list of data files
+names(data_files)<-c("tool_data", "nest_data", "ape_tool_data", "ape_nest_data", "corvus_tool_data", "corvus_nest_data") 
+sapply(data_files, nrow) # remaining articles
+
+# check for and remove excluded articles
+sapply(data_files, function(x){sum(x$Include==0)}) # number of excluded articles
+
+tool_data<-subset(tool_data, Include==1) # remove excluded articles
+ape_tool_data<-subset(ape_tool_data, Include==1) 
+corvus_tool_data<-subset(corvus_tool_data, Include==1) 
+corvus_nest_data<-subset(corvus_nest_data, Include==1) 
+
+data_files<-list(tool_data, nest_data, ape_tool_data, ape_nest_data, corvus_tool_data, corvus_nest_data) # update list of data files
+names(data_files)<-c("tool_data", "nest_data", "ape_tool_data", "ape_nest_data", "corvus_tool_data", "corvus_nest_data") 
+sapply(data_files, nrow) # remaining articles (sample sizes for citation rate analyses)
+
+# create subsets of data including only articles with abstracts
+tool_abstracts<-subset(tool_data, Abstract!="") 
+nest_abstracts<-subset(nest_data, Abstract!="") 
+ape_tool_abstracts<-subset(ape_tool_data, Abstract!="") 
+ape_nest_abstracts<-subset(ape_nest_data, Abstract!="") 
+corvus_tool_abstracts<-subset(corvus_tool_data, Abstract!="") 
+corvus_nest_abstracts<-subset(corvus_nest_data, Abstract!="") 
+
+abstract_data_files<-list(tool_abstracts, nest_abstracts, ape_tool_abstracts, ape_nest_abstracts, corvus_tool_abstracts, corvus_nest_abstracts)
+names(abstract_data_files)<-c("tool_abstracts", "nest_abstracts", "ape_tool_abstracts", "ape_nest_abstracts", "corvus_tool_abstracts", "corvus_nest_abstracts")
+
+sapply(abstract_data_files, nrow) # N articles with abstracts
+
+# check for non-English language abstracts
+sapply(abstract_data_files, function(x){any(detect_language(x$Abstract)!="en") })
+
+# remove non-English language abstracts
+table(detect_language(nest_abstracts$Abstract)!="en", useNA="ifany") # 1 non-English, 3 NA
+subset(nest_abstracts, is.na(detect_language(nest_abstracts$Abstract)))$Abstract # NA are all in English, likely misclassified due to use of Latin names/non-English place names
+nest_abstracts<-nest_abstracts[-which(detect_language(nest_abstracts$Abstract)!="en"),] # remove the non-English abstract
+
+abstract_data_files<-list(tool_abstracts, nest_abstracts, ape_tool_abstracts, ape_nest_abstracts, corvus_tool_abstracts, corvus_nest_abstracts) # update data files
+names(abstract_data_files)<-c("tool_abstracts", "nest_abstracts", "ape_tool_abstracts", "ape_nest_abstracts", "corvus_tool_abstracts", "corvus_nest_abstracts")
+
+sapply(abstract_data_files, nrow) # N articles with abstracts (sample sizes for abstract language analyses)
+
+######################
+### CITATION RATES ###
+######################
+
+# plot distributions of citation counts
+par(mfrow=c(3, 2))
+names(data_files)
+invisible(sapply(data_files, function(x){hist(x$Times.Cited..All.Databases, xlab="Citations", main="")})) # all right-skewed
+
+# check for missing data
+sapply(data_files, function(x){sum(is.na(x$Times.Cited..All.Databases))})
+
+# median citations per article
+sapply(data_files, function(x){median(x[,"Times.Cited..All.Databases"])}) 
+
+# IQR citations per article
+sapply(data_files, function(x){IQR(x[,"Times.Cited..All.Databases"])}) 
+
+# wilcox tests
+wilcox.test(tool_data$Times.Cited..All.Databases, nest_data$Times.Cited..All.Databases, alternative="two.sided") # all species
+wilcox.test(ape_tool_data$Times.Cited..All.Databases, ape_nest_data$Times.Cited..All.Databases, alternative="two.sided") # great apes
+wilcox.test(corvus_tool_data$Times.Cited..All.Databases, corvus_nest_data$Times.Cited..All.Databases, alternative="two.sided") # corvus species
+wilcox.test(ape_tool_data$Times.Cited..All.Databases, corvus_tool_data$Times.Cited..All.Databases, alternative="two.sided") # tools for apes vs. corvus
+wilcox.test(ape_nest_data$Times.Cited..All.Databases, corvus_nest_data$Times.Cited..All.Databases, alternative="two.sided") # nests for apes vs. corvus
+
+# Figure 1 (boxplot comparing citation rates for tool use and nest building in each sample)
+par(mfrow=c(1,1))
+boxplot(list(log10(tool_data$Times.Cited..All.Databases+1), 
+				log10(nest_data$Times.Cited..All.Databases+1), 
+				log10(ape_tool_data$Times.Cited..All.Databases+1), 
+				log10(ape_nest_data$Times.Cited..All.Databases+1), 
+				log10(corvus_tool_data$Times.Cited..All.Databases+1), 
+				log10(corvus_nest_data$Times.Cited..All.Databases+1)), 
+				col=c(rgb(1,0,0,0.5), rgb(0,0,1,0.5)), border=c(rgb(1,0,0,0.75), rgb(0,0,1,0.75)), las=2, yaxt="n", xaxt="n", 					ylab="Citations", range=1.5)
+axis(side=2, at=c(0,1,2,3), labels=c(1,10,100,1000), las=1)			
+axis(side=1, at=c(1.5,3.5,5.5), labels=c("All species", "Great apes", "Corvus"))				
+legend("topright", legend=c("Tool use", "Nest building"), pch=15, cex=1, col=c(rgb(1,0,0,0.75), rgb(0,0,1,0.75)), bty='n')
+
+#########################
+### ABSTRACT LANGUAGE ###
+#########################
+
+# tokenize abstracts by word (i.e. split into individual words)
+tool_tokens<-unnest_tokens(tbl=tool_abstracts, output=word, input=Abstract, token="words", to_lower=TRUE)$word 
+nest_tokens<-unnest_tokens(tbl=nest_abstracts, output=word, input=Abstract, token="words", to_lower=TRUE)$word 
+ape_tool_tokens<-unnest_tokens(tbl=ape_tool_abstracts, output=word, input=Abstract, token="words", to_lower=TRUE)$word 
+ape_nest_tokens<-unnest_tokens(tbl=ape_nest_abstracts, output=word, input=Abstract, token="words", to_lower=TRUE)$word 
+corvus_tool_tokens<-unnest_tokens(tbl=corvus_tool_abstracts, output=word, input=Abstract, token="words", to_lower=TRUE)$word 
+corvus_nest_tokens<-unnest_tokens(tbl=corvus_nest_abstracts, output=word, input=Abstract, token="words", to_lower=TRUE)$word 
+ 
+sapply(list(tool_tokens, nest_tokens, ape_tool_tokens, ape_nest_tokens, corvus_tool_tokens, corvus_nest_tokens), length) # N words
+
+# convert words to stems
+tool_stems<-wordStem(tool_tokens,  language = "english")
+nest_stems<-wordStem(nest_tokens,  language = "english")
+ape_tool_stems<-wordStem(ape_tool_tokens,  language = "english")
+ape_nest_stems<-wordStem(ape_nest_tokens,  language = "english")
+corvus_tool_stems<-wordStem(corvus_tool_tokens,  language = "english")
+corvus_nest_stems<-wordStem(corvus_nest_tokens,  language = "english")
+
+sapply(list(tool_stems, nest_stems, ape_tool_stems, ape_nest_stems, corvus_tool_stems, corvus_nest_stems), length) # N stems
+
+# load custom dictionary (includes the list of target 'intelligent' words for matching)
+dictionary<-read.table("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/main/construction_dictionary.txt", header=T, sep="\t") # read in dictionary
+
+# convert dictionary words to stems
+dictionary_stems <- wordStem(dictionary$word,  language = "english")
+length(unique(dictionary_stems)) # check for duplicates
+
+# count matching stems (i.e. the N times dictionary stems appear in each set of abstracts)
+tool_matches<-sum(tool_stems %in% dictionary_stems)
+nest_matches<-sum(nest_stems %in% dictionary_stems)
+ape_tool_matches<-sum(ape_tool_stems %in% dictionary_stems)
+ape_nest_matches<-sum(ape_nest_stems %in% dictionary_stems)
+corvus_tool_matches<-sum(corvus_tool_stems %in% dictionary_stems)
+corvus_nest_matches<-sum(corvus_nest_stems %in% dictionary_stems)
+
+# calculate % matching stems (i.e. the % of stems in each set of abstracts that match dictionary stems)
+tool_matches/length(tool_stems)*100
+nest_matches/length(nest_stems)*100
+ape_tool_matches/length(ape_tool_stems)*100
+ape_nest_matches/length(ape_nest_stems)*100
+corvus_tool_matches/length(corvus_tool_stems)*100
+corvus_nest_matches/length(corvus_nest_stems)*100
+
+# create matrices of matching vs. non-matching for chi-squared tests (tools vs. nests in each sample)
+tool_nest_matrix<-matrix(c(tool_matches, length(tool_stems)-tool_matches, nest_matches, length(nest_stems)-nest_matches), nrow=2, dimnames=list(c("Match", "NonMatch"), c("Tools", "Nests"))) 
+ape_tool_nest_matrix<-matrix(c(ape_tool_matches, length(ape_tool_stems)-ape_tool_matches, ape_nest_matches, length(ape_nest_stems)-ape_nest_matches), nrow=2, dimnames=list(c("Match", "NonMatch"), c("Tools", "Nests"))) 
+corvus_tool_nest_matrix<-matrix(c(corvus_tool_matches, length(corvus_tool_stems)-corvus_tool_matches, corvus_nest_matches, length(corvus_nest_stems)-corvus_nest_matches), nrow=2, dimnames=list(c("Match", "NonMatch"), c("Tools", "Nests"))) 
+
+# chi-squared tests 
+chisq.test(tool_nest_matrix)
+chisq.test(ape_tool_nest_matrix)
+chisq.test(corvus_tool_nest_matrix)
+
+# compare tool use in great apes to tool use in corvus
+ape_corvus_tool_matrix<-matrix(c(ape_tool_matches, length(ape_tool_stems)-ape_tool_matches, corvus_tool_matches, length(corvus_tool_stems)-corvus_tool_matches), nrow=2, dimnames=list(c("Match", "NonMatch"), c("Ape", "Corvus")))
+chisq.test(ape_corvus_tool_matrix)
+
+# compare nest building in great apes to nest building in corvus
+ape_corvus_nest_matrix<-matrix(c(ape_nest_matches, length(ape_nest_stems)-ape_nest_matches, corvus_nest_matches, length(corvus_nest_stems)-corvus_nest_matches), nrow=2, dimnames=list(c("Match", "NonMatch"), c("Ape", "Corvus")))
+chisq.test(ape_corvus_nest_matrix)
+
+# count matches for individual stems
+toolmatch_stems<-as.data.frame(table(tool_stems[which(tool_stems %in% dictionary_stems)])) # frequency table for each matching stem
+colnames(toolmatch_stems)<-c("Stem", "Tool_freq")
+
+nestmatch_stems<-as.data.frame(table(nest_stems[which(nest_stems %in% dictionary_stems)])) 
+colnames(nestmatch_stems)<-c("Stem", "Nest_freq")
+
+ape_toolmatch_stems<-as.data.frame(table(ape_tool_stems[which(ape_tool_stems %in% dictionary_stems)])) 
+colnames(ape_toolmatch_stems)<-c("Stem", "Tool_freq")
+
+ape_nestmatch_stems<-as.data.frame(table(ape_nest_stems[which(ape_nest_stems %in% dictionary_stems)])) 
+colnames(ape_nestmatch_stems)<-c("Stem", "Nest_freq")
+
+corvus_toolmatch_stems<-as.data.frame(table(corvus_tool_stems[which(corvus_tool_stems %in% dictionary_stems)])) 
+colnames(corvus_toolmatch_stems)<-c("Stem", "Tool_freq")
+
+corvus_nestmatch_stems<-as.data.frame(table(corvus_nest_stems[which(corvus_nest_stems %in% dictionary_stems)])) 
+colnames(corvus_nestmatch_stems)<-c("Stem", "Nest_freq")
+
+# merge frequencies of individual stem matches for comparison (tools vs. nests for each sample)
+merged_match_stems<-merge(toolmatch_stems, nestmatch_stems, by="Stem", all=TRUE) # including stems matched in either nest building or tool use articles
+merged_match_stems[is.na(merged_match_stems)]<-0 # replace NAs with zeros (i.e. stems found in one dataset but not the other)
+
+ape_merged_match_stems<-merge(ape_toolmatch_stems, ape_nestmatch_stems, by="Stem", all=TRUE) 
+ape_merged_match_stems[is.na(ape_merged_match_stems)]<-0 
+
+corvus_merged_match_stems<-merge(corvus_toolmatch_stems, corvus_nestmatch_stems, by="Stem", all=TRUE) 
+corvus_merged_match_stems[is.na(corvus_merged_match_stems)]<-0 
+
+# calculate percentage matches for each stem
+merged_match_stems$Tool_percent<-merged_match_stems$Tool_freq/length(tool_stems)*100 
+merged_match_stems$Nest_percent<-merged_match_stems$Nest_freq/length(nest_stems)*100
+
+ape_merged_match_stems$Tool_percent<-ape_merged_match_stems$Tool_freq/length(ape_tool_stems)*100 
+ape_merged_match_stems$Nest_percent<-ape_merged_match_stems$Nest_freq/length(ape_nest_stems)*100
+
+corvus_merged_match_stems$Tool_percent<-corvus_merged_match_stems$Tool_freq/length(corvus_tool_stems)*100 
+corvus_merged_match_stems$Nest_percent<-corvus_merged_match_stems$Nest_freq/length(corvus_nest_stems)*100
+
+# calculate absolute percentage difference for tool vs. nest matches
+merged_match_stems$Percent_diff<-merged_match_stems$Tool_percent-merged_match_stems$Nest_percent
+ape_merged_match_stems$Percent_diff<-ape_merged_match_stems$Tool_percent-ape_merged_match_stems$Nest_percent
+corvus_merged_match_stems$Percent_diff<-corvus_merged_match_stems$Tool_percent-corvus_merged_match_stems$Nest_percent
+
+# order by difference between tool and nest % matches
+merged_match_stems<-merged_match_stems[order(merged_match_stems$Percent_diff, decreasing=F),] 
+ape_merged_match_stems<-ape_merged_match_stems[order(ape_merged_match_stems$Percent_diff, decreasing=F),] 
+corvus_merged_match_stems<-corvus_merged_match_stems[order(corvus_merged_match_stems$Percent_diff, decreasing=F),] 
+
+
+# Fisher's exact tests comparing frequency of each stem between tool and nest abstracts
+fisher_fun<-function(x, y){ # set up a function to run Fisher's tests on each stem (x=tool use matches, y=nest building matches)
+	results<-matrix(c(x, length(tool_stems)-x, y, length(nest_stems)-y), nrow=2, dimnames=list(c("Match", "NonMatch"), c("Tools", "Nests")))
+	return(fisher.test(results)$p.value)
+}
+
+merged_match_stems$p_val<-NA # create blank column in the table for the p-values
+for (i in 1:length(merged_match_stems$Stem)){ # for all individual stems
+	merged_match_stems$p_val[i]<-fisher_fun(merged_match_stems$Tool_freq[i], merged_match_stems$Nest_freq[i]) # run the test & extract p-values
+}
+merged_match_stems[,4:7]<-round(merged_match_stems[,4:7], 3) # round % and p-values to 3 d.p.
+
+ape_merged_match_stems$p_val<-NA 
+for (i in 1:length(ape_merged_match_stems$Stem)){ 
+	ape_merged_match_stems$p_val[i]<-fisher_fun(ape_merged_match_stems$Tool_freq[i], ape_merged_match_stems$Nest_freq[i])
+}
+ape_merged_match_stems[,4:7]<-round(ape_merged_match_stems[,4:7], 3) # round % and p-values to 3 d.p.
+
+corvus_merged_match_stems$p_val<-NA 
+for (i in 1:length(corvus_merged_match_stems$Stem)){ 
+	corvus_merged_match_stems$p_val[i]<-fisher_fun(corvus_merged_match_stems$Tool_freq[i], corvus_merged_match_stems$Nest_freq[i])
+}
+corvus_merged_match_stems[,4:7]<-round(corvus_merged_match_stems[,4:7], 3) # round % and p-values to 3 d.p.
+
+
+# Figure 2 (barplots comparing individual matched stem percentages between tool use and nest building in each sample)
+par(mfrow=c(1,3))
+par(mar=c(5,5,5,1))
+
+barplot(height=merged_match_stems$Tool_percent, names=merged_match_stems$Stem, xlim=c(0,0.5), cex.names=0.8, las=1, cex.axis=0.9, col=rgb(1,0,0,0.5), border="red", xlab="Relative frequency (% words)", cex.lab=0.9, horiz=TRUE)
+barplot(height=merged_match_stems$Nest_percent, add=T, col=rgb(0,0,1,0.5), border="blue", axes=F, yaxt="n", xaxt="n", horiz=TRUE)
+title(main="a. All species", line=-0.9, adj=0)
+
+barplot(height=ape_merged_match_stems$Tool_percent, names=ape_merged_match_stems$Stem, xlim=c(0,0.5), cex.names=0.8, las=1, cex.axis=0.9, col=rgb(1,0,0,0.5), border="red", xlab="Relative frequency (% words)", cex.lab=0.9, horiz=TRUE)
+barplot(height=ape_merged_match_stems$Nest_percent, add=T, col=rgb(0,0,1,0.5), border="blue", axes=F, yaxt="n", xaxt="n", horiz=TRUE)
+title(main="b. Great apes", line=-0.9, adj=0)
+
+barplot(height=corvus_merged_match_stems$Tool_percent, names=corvus_merged_match_stems$Stem, xlim=c(0,0.5), cex.names=0.8, las=1, cex.axis=0.9, col=rgb(1,0,0,0.5), border="red", xlab="Relative frequency (% words)", cex.lab=0.9, horiz=TRUE)
+barplot(height=corvus_merged_match_stems$Nest_percent, add=T, col=rgb(0,0,1,0.5), border="blue", axes=F, yaxt="n", xaxt="n", horiz=TRUE)
+legend("bottomright", pch=15, col=c(rgb(1,0,0,0.75), rgb(0,0,1,0.75)), legend=c("Tool use", "Nest building"), bty="n", cex=1.2)
+title(main="c. Corvus", line=-0.9, adj=0)
+
+##########################
+### CITATIONS/LANGUAGE ###
+##########################
+
+# calculate percentage of matching 'intelligent' words in each article abstract (i.e. N matches per abstract as a % of total words in each abstract)
+tool_abstracts$Perc_matches<-NA # blank column for results
+for (i in 1:length(tool_abstracts$Perc_matches)){
+	tokens<-unnest_tokens(tbl=tool_abstracts[i,], output=word, input=Abstract, token="words", to_lower=TRUE)$word
+	stems<-wordStem(tokens,  language = "english")
+	tool_abstracts$Perc_matches[i]<-length(which(stems %in% dictionary_stems))/length(stems)*100
+	}
+
+nest_abstracts$Perc_matches<-NA
+for (i in 1:length(nest_abstracts$Perc_matches)){
+	tokens<-unnest_tokens(tbl= nest_abstracts[i,], output=word, input=Abstract, token="words", to_lower=TRUE)$word
+	stems<-wordStem(tokens,  language = "english")
+	nest_abstracts$Perc_matches[i]<-length(which(stems %in% dictionary_stems))/length(stems)*100
+	}
+
+ape_tool_abstracts$Perc_matches<-NA # blank column for results
+for (i in 1:length(ape_tool_abstracts$Perc_matches)){
+	tokens<-unnest_tokens(tbl=ape_tool_abstracts[i,], output=word, input=Abstract, token="words", to_lower=TRUE)$word
+	stems<-wordStem(tokens,  language = "english")
+	ape_tool_abstracts$Perc_matches[i]<-length(which(stems %in% dictionary_stems))/length(stems)*100
+	}
+
+ape_nest_abstracts$Perc_matches<-NA
+for (i in 1:length(ape_nest_abstracts$Perc_matches)){
+	tokens<-unnest_tokens(tbl= ape_nest_abstracts[i,], output=word, input=Abstract, token="words", to_lower=TRUE)$word
+	stems<-wordStem(tokens,  language = "english")
+	ape_nest_abstracts$Perc_matches[i]<-length(which(stems %in% dictionary_stems))/length(stems)*100
+	}
+
+corvus_tool_abstracts$Perc_matches<-NA 
+for (i in 1:length(corvus_tool_abstracts$Perc_matches)){
+	tokens<-unnest_tokens(tbl=corvus_tool_abstracts[i,], output=word, input=Abstract, token="words", to_lower=TRUE)$word
+	stems<-wordStem(tokens,  language = "english")
+	corvus_tool_abstracts$Perc_matches[i]<-length(which(stems %in% dictionary_stems))/length(stems)*100
+	}
+
+corvus_nest_abstracts$Perc_matches<-NA
+for (i in 1:length(corvus_nest_abstracts$Perc_matches)){
+	tokens<-unnest_tokens(tbl=corvus_nest_abstracts[i,], output=word, input=Abstract, token="words", to_lower=TRUE)$word
+	stems<-wordStem(tokens,  language = "english")
+	corvus_nest_abstracts$Perc_matches[i]<-length(which(stems %in% dictionary_stems))/length(stems)*100
+	}
+
+# exploratory plots
+par(mfrow=c(3,2))
+abstract_data_files<-list(tool_abstracts, nest_abstracts, ape_tool_abstracts, ape_nest_abstracts, corvus_tool_abstracts, corvus_nest_abstracts) # update data files
+names(abstract_data_files)<-c("tool_abstracts", "nest_abstracts", "ape_tool_abstracts", "ape_nest_abstracts", "corvus_tool_abstracts", "corvus_nest_abstracts")
+
+invisible(sapply(abstract_data_files, function(x){hist(x$Perc_matches, xlab="Citations", main="")})) # generally right-skewed
+
+invisible(sapply(abstract_data_files, function(x){plot(Times.Cited..All.Databases~Perc_matches, x)})) # likely violate linear model assumptions
+
+invisible(sapply(abstract_data_files, function(x){plot(log10(Times.Cited..All.Databases+1)~log10(Perc_matches+1), x)})) # some improvement with log transformation
+
+# linear models 
+tool_lm<-lm(log10(Times.Cited..All.Databases+1)~log10(Perc_matches+1), tool_abstracts)
+nest_lm<-lm(log10(Times.Cited..All.Databases+1)~log10(Perc_matches+1), nest_abstracts)
+ape_tool_lm<-lm(log10(Times.Cited..All.Databases+1)~log10(Perc_matches+1), ape_tool_abstracts)
+ape_nest_lm<-lm(log10(Times.Cited..All.Databases+1)~log10(Perc_matches+1), ape_nest_abstracts)
+corvus_tool_lm<-lm(log10(Times.Cited..All.Databases+1)~log10(Perc_matches+1), corvus_tool_abstracts)
+corvus_nest_lm<-lm(log10(Times.Cited..All.Databases+1)~log10(Perc_matches+1), corvus_nest_abstracts)
+
+# diagnostic plots
+par(mfrow=c(3,2))
+qqnorm(tool_lm$resid); qqline(tool_lm$resid) # most suggest some violation of assumptions
+qqnorm(nest_lm$resid); qqline(nest_lm$resid)
+qqnorm(ape_tool_lm$resid); qqline(ape_tool_lm$resid)
+qqnorm(ape_nest_lm$resid); qqline(ape_nest_lm$resid)
+qqnorm(corvus_tool_lm$resid); qqline(corvus_tool_lm$resid)
+qqnorm(corvus_tool_lm$resid); qqline(corvus_tool_lm$resid)
+
+# hurdle models
+tool_hurdle<-hurdle(Times.Cited..All.Databases~log10(Perc_matches+1), tool_abstracts, dist="poisson", zero.dist="binomial", link="logit")
+summary(tool_hurdle)
+tool_hurdle_null<-hurdle(Times.Cited..All.Databases~1, tool_abstracts, dist="poisson", zero.dist="binomial", link="logit")
+1-(logLik(tool_hurdle)/logLik(tool_hurdle_null)) # McFadden's R-squared
+
+nest_hurdle<-hurdle(Times.Cited..All.Databases~log10(Perc_matches+1), nest_abstracts, dist="poisson", zero.dist="binomial", link="logit")
+summary(nest_hurdle)
+nest_hurdle_null<-hurdle(Times.Cited..All.Databases~1, nest_abstracts, dist="poisson", zero.dist="binomial", link="logit")
+1-(logLik(nest_hurdle)/logLik(nest_hurdle_null))
+
+ape_tool_hurdle<-hurdle(Times.Cited..All.Databases~log10(Perc_matches+1), ape_tool_abstracts, dist="poisson", zero.dist="binomial", link="logit")
+summary(ape_tool_hurdle)
+ape_tool_hurdle_null<-hurdle(Times.Cited..All.Databases~1, ape_tool_abstracts, dist="poisson", zero.dist="binomial", link="logit")
+1-(logLik(ape_tool_hurdle)/logLik(ape_tool_hurdle_null)) # McFadden's R-squared
+
+ape_nest_hurdle<-hurdle(Times.Cited..All.Databases~log10(Perc_matches+1), ape_nest_abstracts, dist="poisson", zero.dist="binomial", link="logit")
+summary(ape_nest_hurdle)
+ape_nest_hurdle_null<-hurdle(Times.Cited..All.Databases~1, ape_nest_abstracts, dist="poisson", zero.dist="binomial", link="logit")
+1-(logLik(ape_nest_hurdle)/logLik(ape_nest_hurdle_null))
+
+corvus_tool_hurdle<-hurdle(Times.Cited..All.Databases~log10(Perc_matches+1), corvus_tool_abstracts, dist="poisson", zero.dist="binomial", link="logit")
+summary(corvus_tool_hurdle)
+corvus_tool_hurdle_null<-hurdle(Times.Cited..All.Databases~1, corvus_tool_abstracts, dist="poisson", zero.dist="binomial", link="logit")
+1-(logLik(corvus_tool_hurdle)/logLik(corvus_tool_hurdle_null)) # McFadden's R-squared
+
+corvus_nest_hurdle<-hurdle(Times.Cited..All.Databases~log10(Perc_matches+1), corvus_nest_abstracts, dist="poisson", zero.dist="binomial", link="logit")
+summary(corvus_nest_hurdle)
+corvus_nest_hurdle_null<-hurdle(Times.Cited..All.Databases~1, corvus_nest_abstracts, dist="poisson", zero.dist="binomial", link="logit")
+1-(logLik(corvus_nest_hurdle)/logLik(corvus_nest_hurdle_null))
+
+
+# Figure 3 (scatter plots + fit lines from hurdle models for each behaviour in each sample)
+par(mfrow=c(1,2))
+plot(Times.Cited..All.Databases~log10(Perc_matches+1), tool_abstracts, las=1, xlab="% matches (log-10 scale)", ylab="Citations", col=rgb(0,0,0,0.5), pch=19)
+title(main="a. Tool use abstracts", line=1, adj=0)
+tool_abstracts$fitted<-fitted(tool_hurdle) # extract fitted values
+points(fitted~log10(Perc_matches+1), data=tool_abstracts[order(tool_abstracts$Perc_matches),], type="l", lwd=3, col=c(rgb(1,0,0,0.75)))
+
+plot(Times.Cited..All.Databases~log10(Perc_matches+1), nest_abstracts, las=1, xlab="% matches (log-10 scale)", ylab="Citations", col=rgb(0,0,0,0.5), pch=19)
+title(main="b. Nest building abstracts", line=1, adj=0)
+nest_abstracts$fitted<-fitted(nest_hurdle)
+points(fitted~log10(Perc_matches+1), data=nest_abstracts[order(nest_abstracts$Perc_matches),], type="l", lwd=3, col=c(rgb(0,0,1,0.75)))
+
+par(mfrow=c(1,2))
+plot(Times.Cited..All.Databases~log10(Perc_matches+1), ape_tool_abstracts, las=1, xlab="% matches (log-10 scale)", ylab="Citations", col=rgb(0,0,0,0.5), pch=19)
+title(main="a. Tool use abstracts", line=1, adj=0)
+ape_tool_abstracts$fitted<-fitted(ape_tool_hurdle)
+points(fitted~log10(Perc_matches+1), data=ape_tool_abstracts[order(ape_tool_abstracts$Perc_matches),], type="l", lwd=3, col=c(rgb(1,0,0,0.75)))
+
+plot(Times.Cited..All.Databases~log10(Perc_matches+1), ape_nest_abstracts, las=1, xlab="% matches (log-10 scale)", ylab="Citations", col=rgb(0,0,0,0.5), pch=19)
+title(main="b. Nest building abstracts", line=1, adj=0)
+ape_nest_abstracts$fitted<-fitted(ape_nest_hurdle)
+points(fitted~log10(Perc_matches+1), data=ape_nest_abstracts[order(ape_nest_abstracts$Perc_matches),], type="l", lwd=3, col=c(rgb(0,0,1,0.75)))
+
+par(mfrow=c(1,2))
+plot(Times.Cited..All.Databases~log10(Perc_matches+1), corvus_tool_abstracts, las=1, xlab="% matches (log-10 scale)", ylab="Citations", col=rgb(0,0,0,0.5), pch=19)
+title(main="a. Tool use abstracts", line=1, adj=0)
+corvus_tool_abstracts$fitted<-fitted(corvus_tool_hurdle)
+points(fitted~log10(Perc_matches+1), data=corvus_tool_abstracts[order(corvus_tool_abstracts$Perc_matches),], type="l", lwd=3, col=c(rgb(1,0,0,0.75)))
+
+plot(Times.Cited..All.Databases~log10(Perc_matches+1), corvus_nest_abstracts, las=1, xlab="% matches (log-10 scale)", ylab="Citations", col=rgb(0,0,0,0.5), pch=19)
+title(main="b. Nest building abstracts", line=1, adj=0)
+corvus_nest_abstracts$fitted<-fitted(corvus_nest_hurdle)
+points(fitted~log10(Perc_matches+1), data=corvus_nest_abstracts[order(corvus_nest_abstracts$Perc_matches),], type="l", lwd=3, col=c(rgb(0,0,1,0.75)))
+
+#################################
+### LANGUAGE CHANGE OVER TIME ###
+#################################
+
+# descriptive statistics
+range(tool_abstracts$Publication.Year)
+range(nest_abstracts$Publication.Year)
+
+table(tool_abstracts$Publication.Year)
+table(nest_abstracts$Publication.Year)
+
+# calculate percentage matches per year (i.e. matching stems of abstracts in a given year as a percentage of all stems in that year)
+tool_words_year<-as.data.frame(cbind(unique(tool_abstracts$Publication.Year), rep(NA, length(unique(tool_abstracts$Publication.Year))))) # set up data
+colnames(tool_words_year)<-c("Year", "Perc_matches") 
+tool_words_year<-tool_words_year[order(tool_words_year$Year),] # sort by year
+
+for (i in 1:length(tool_words_year$Perc_matches)){
+	tokens<-unnest_tokens(tbl=tool_abstracts[tool_abstracts$Publication.Year==tool_words_year$Year[i],], output=word, input=Abstract, token="words", to_lower=TRUE)$word
+	stems<-wordStem(tokens,  language = "english")
+	tool_words_year$Perc_matches[i]<-length(which(stems %in% dictionary_stems))/length(stems)*100
+	}
+	
+nest_words_year<-as.data.frame(cbind(unique(nest_abstracts$Publication.Year), rep(NA, length(unique(nest_abstracts$Publication.Year))))) 
+colnames(nest_words_year)<-c("Year", "Perc_matches") 
+nest_words_year<-nest_words_year[order(nest_words_year$Year),] 
+
+for (i in 1:length(nest_words_year$Perc_matches)){
+	tokens<-unnest_tokens(tbl=nest_abstracts[nest_abstracts$Publication.Year==nest_words_year$Year[i],], output=word, input=Abstract, token="words", to_lower=TRUE)$word
+	stems<-wordStem(tokens,  language = "english")
+	nest_words_year$Perc_matches[i]<-length(which(stems %in% dictionary_stems))/length(stems)*100
+	}
+	
+merged_words_year<-merge(tool_words_year, nest_words_year, by="Year", all=TRUE)
+colnames(merged_words_year)[2:3]<-c("Tool_matches", "Nest_matches") # rename columns
+merged_words_year[is.na(merged_words_year)]<-0 # change NAs to zeros
+merged_words_year<-subset(merged_words_year, Year>1975) # remove the single article prior to 1976
+merged_words_year<-subset(merged_words_year, Year<2024) # remove 2024 
+
+# linear models
+toolmatches_year_lm<-lm(Tool_matches~Year, merged_words_year)
+summary(toolmatches_year_lm)
+qqnorm(toolmatches_year_lm$resid); qqline(toolmatches_year_lm$resid) # good fit 
+
+nestmatches_year_lm<-lm(Nest_matches~Year, merged_words_year)
+summary(nestmatches_year_lm)
+qqnorm(nestmatches_year_lm$resid); qqline(nestmatches_year_lm$resid) # good fit apart from one possible outlier
+
+# Figure 4 (change in % of 'intelligent' words over time)
+par(mfrow=c(1,1))
+plot(Tool_matches~Year, merged_words_year, pch=19, col=c(rgb(1,0,0,0.6)), las=1, ylab="Relative frequency (% words)", xaxt="n")
+abline(toolmatches_year_lm, col="red", lwd=2)
+points(Nest_matches~Year, merged_words_year, pch=19, col=c(rgb(0,0,1,0.6)), las=1, ylab="Relative frequency (% words)")
+abline(nestmatches_year_lm, col="blue", lwd=2)
+axis(side=1, at=c(seq(from=1975, to=2020, by=5)))
+legend("topleft", legend=c("Tool use", "Nest building"), pch=19, cex=1, col=c(rgb(1,0,0,0.75), rgb(0,0,1,0.75)), bty='n')
