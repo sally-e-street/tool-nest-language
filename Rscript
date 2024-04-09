@@ -335,7 +335,7 @@ par(mfrow=c(3,2))
 abstract_data_files<-list(tool_abstracts, nest_abstracts, ape_tool_abstracts, ape_nest_abstracts, corvus_tool_abstracts, corvus_nest_abstracts) # update data files
 names(abstract_data_files)<-c("tool_abstracts", "nest_abstracts", "ape_tool_abstracts", "ape_nest_abstracts", "corvus_tool_abstracts", "corvus_nest_abstracts")
 
-invisible(sapply(abstract_data_files, function(x){hist(x$Perc_matches, xlab="Citations", main="")})) # generally right-skewed
+invisible(sapply(abstract_data_files, function(x){hist(x$Perc_matches, xlab="Percent matches", main="")})) # generally right-skewed
 
 invisible(sapply(abstract_data_files, function(x){plot(Times.Cited..All.Databases~Perc_matches, x)})) # likely violate linear model assumptions
 
