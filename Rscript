@@ -20,7 +20,7 @@ options(scipen=999)
 # load data from WoS searches
 tool_data<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/WoS_data/all_tool_results.csv") # tool use (all species): 1702 articles
 nest_data<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/WoS_data/all_nest_results.csv") # nest building (all species): 6132 articles
-ape_tool_data<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/WoS_data/ape_tool_results.csv") # tool use in apes: 578 articles
+ape_tool_data<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/WoS_data/ape_tool_results.csv") # tool use in apes: 578 articles
 ape_nest_data<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/WoS_data/ape_nest_results.csv") # nest building in apes: 74 articles
 corvus_tool_data<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/WoS_data/corvus_tool_results.csv") # tool use in corvus: 106 articles
 corvus_nest_data<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/WoS_data/corvus_nest_results.csv") # nest building in corvus: 87 articles
