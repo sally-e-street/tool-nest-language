@@ -2,7 +2,7 @@
 
 This repository contains R code and data files associated with an as-yet-unpublished manuscript titled _"Anthropocentric biases may explain research disparities between animal tool use and nest building"_. See below for a description of each file.
 
-**all_tool_results.csv**, **all_nest_results.csv**, **ape_tool_results.csv**, **ape_nest_results.csv**, **corvus_tool_results.csv** and **corvus_nest_results.csv** contain the data used to produce the analyses reported in the main text and supplementary material. Files contain data from articles addressing tool use, nest building, tool use in great apes, nest building in great apes, tool use in _Corvus_ species and nest building in _Corvus_ species respectively.
+Files contained in the **WoS data** folder, i.e. **all_tool_results.csv**, **all_nest_results.csv**, **ape_tool_results.csv**, **ape_nest_results.csv**, **corvus_tool_results.csv** and **corvus_nest_results.csv** contain the data used to produce the analyses reported in the main text and supplementary material. Files contain data from articles addressing tool use, nest building, tool use in great apes, nest building in great apes, tool use in _Corvus_ species and nest building in _Corvus_ species respectively.
 
 A description of the relevant columns is as follows:
 
