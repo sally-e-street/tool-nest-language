@@ -18,12 +18,12 @@ options(scipen=999)
 #################
 
 # load data from WoS searches
-tool_data<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/WoS_data/all_tool_results.csv") # tool use (all species): 1702 articles
-nest_data<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/WoS_data/all_nest_results.csv") # nest building (all species): 6132 articles
+tool_data<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/WoS_data/all_tool_results.csv") # tool use (all species): 1702 articles
+nest_data<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/WoS_data/all_nest_results.csv") # nest building (all species): 6132 articles
 ape_tool_data<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/WoS_data/ape_tool_results.csv") # tool use in apes: 578 articles
-ape_nest_data<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/WoS_data/ape_nest_results.csv") # nest building in apes: 74 articles
-corvus_tool_data<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/WoS_data/corvus_tool_results.csv") # tool use in corvus: 106 articles
-corvus_nest_data<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/WoS_data/corvus_nest_results.csv") # nest building in corvus: 87 articles
+ape_nest_data<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/WoS_data/ape_nest_results.csv") # nest building in apes: 74 articles
+corvus_tool_data<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/WoS_data/corvus_tool_results.csv") # tool use in corvus: 106 articles
+corvus_nest_data<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/WoS_data/corvus_nest_results.csv") # nest building in corvus: 87 articles
 
 sapply(list(tool_data, nest_data, ape_tool_data, ape_nest_data, corvus_tool_data, corvus_nest_data), nrow) # check number of rows in each file
 
@@ -92,24 +92,24 @@ journals<-as.data.frame(journals) # convert to data frame
 colnames(journals)<-"Name" # change column name
 
 # import impact factors and subject category data from searches of Clarivate's  JCR tool (note: multiple searches had to be run for different categories, because you can only export 600 results at a time)
-JCR_anthro<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_anthro.csv") # anthropology journals
-JCR_arch<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_arch.csv") # archaeology journals
-JCR_beh_sci<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_beh_sci.csv") # behavioural science journals
-JCR_biology<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_biology.csv") # biology journals
-JCR_biodiv<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_biodiv.csv") # biodiversity journals
-JCR_ecology<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_ecology.csv") # ecology journals
-JCR_ento<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_ento.csv") # entomology journals
-JCR_env_sci<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_env_sci.csv") # environmental sciences journals
-JCR_evo_devo<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_evo_devo.csv") # evolutionary and developmental biology journals
-JCR_fish<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_fish.csv") # fisheries journals
-JCR_multi<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_multi.csv") # multidisciplinary journals
-JCR_orni<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_orni.csv") # ornithology journals
-JCR_palaeo<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_palaeo.csv") # palaeontology journals
-JCR_psych<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_psych.csv") # psychology journals
-JCR_top600<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_top600.csv") # top 600 journals by IF
-JCR_toxi<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_toxi.csv") # toxicology journals
-JCR_vet<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_vet.csv") # veterinary sciences journals
-JCR_zoology<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/JCR_zoology.csv") # zoology journals
+JCR_anthro<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_anthro.csv") # anthropology journals
+JCR_arch<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_arch.csv") # archaeology journals
+JCR_beh_sci<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_beh_sci.csv") # behavioural science journals
+JCR_biology<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_biology.csv") # biology journals
+JCR_biodiv<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_biodiv.csv") # biodiversity journals
+JCR_ecology<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_ecology.csv") # ecology journals
+JCR_ento<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_ento.csv") # entomology journals
+JCR_env_sci<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_env_sci.csv") # environmental sciences journals
+JCR_evo_devo<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_evo_devo.csv") # evolutionary and developmental biology journals
+JCR_fish<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_fish.csv") # fisheries journals
+JCR_multi<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_multi.csv") # multidisciplinary journals
+JCR_orni<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_orni.csv") # ornithology journals
+JCR_palaeo<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_palaeo.csv") # palaeontology journals
+JCR_psych<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_psych.csv") # psychology journals
+JCR_top600<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_top600.csv") # top 600 journals by IF
+JCR_toxi<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_toxi.csv") # toxicology journals
+JCR_vet<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_vet.csv") # veterinary sciences journals
+JCR_zoology<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/JCR_zoology.csv") # zoology journals
 
 JCR_journals<-rbindlist(list(JCR_anthro, JCR_arch, JCR_beh_sci, JCR_biology, JCR_biodiv, JCR_ecology, JCR_ento, JCR_env_sci, JCR_evo_devo, JCR_fish, JCR_multi, JCR_orni, JCR_palaeo, JCR_psych, JCR_top600, JCR_toxi, JCR_vet,  JCR_zoology)) # combine JCR search results into a single dataframe
 
@@ -121,7 +121,7 @@ journals_info<-merge(journals, JCR_journals[,c("Category", "X2023.JIF", "Journal
 sum(!is.na(journals_info$X2023.JIF)) # only 108 journals could be automatically matched
 
 # merge journal info with data after manual data collection and subject categorisation
-journals_manual<-read.csv("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/JCR_data/journals_manual.csv")
+journals_manual<-read.csv("https://anonymous.4open.science/r/tool-nest-language-94CD/JCR_data/journals_manual.csv")
 str(journals_manual) # all 1823 journals now checked
 sum(!is.na(journals_manual$X2023.JIF)) # info available for 595 journals 
 length(unique(journals_manual$Name)) # no duplicates remaining
@@ -151,7 +151,7 @@ combined_data_abstracts<-subset(combined_data_abstracts, English==1 | is.na(Engl
 str(combined_data_abstracts) # 4110 articles remaining
 
 # add % 'intelligent' words in each article's abstract
-dictionary<-read.table("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/Dictionaries/custom_dictionary.txt", header=T, sep="\t") # load dictionary (includes the list of 'intelligent' words for matching)
+dictionary<-read.table("https://anonymous.4open.science/r/tool-nest-language-94CD/Dictionaries/custom_dictionary.txt", header=T, sep="\t") # load dictionary (includes the list of 'intelligent' words for matching)
 
 # convert dictionary words to stems
 dictionary_stems <- wordStem(dictionary$word,  language = "english")
@@ -166,7 +166,7 @@ for (i in 1:length(combined_data_abstracts$Intel_percent)){ # for each article
 	}
 	
 # repeat using alternative dictionary (just intelligent + 20 synonyms in Collins thesaurus)
-alt_dictionary<-read.table("https://raw.githubusercontent.com/sally-e-street/tool-nest-language/refs/heads/main/Dictionaries/alt_dictionary.txt", header=F, sep="\t") # load alternative dictionary
+alt_dictionary<-read.table("https://anonymous.4open.science/r/tool-nest-language-94CD/Dictionaries/alt_dictionary.txt", header=F, sep="\t") # load alternative dictionary
 length(alt_dictionary$V1) # 21 words
 
 alt_dictionary_stems <- wordStem(alt_dictionary$V1,  language = "english") # convert dictionary words to stems
