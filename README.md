@@ -42,7 +42,7 @@ Abstract: text of article abstract (if available).
 
 Times.Cited..All.Databases: number of citations per article as recorded in all Web of Science databases.
 
-The **Rscripts** folder contains R code used to produce the analyses reported in the main text and supplementary information including one script used for data preparation (**tool_nest_language_data_prep.R**) and one for data anlyses (**tool_nest_language_analyses.R**). For further explanation please see the script annotations.
+The **Rscripts** folder contains R code used to produce the analyses reported in the main text and supplementary information including one script used for data preparation (**tool_nest_language_data_prep.R**) and one for data anlyses (**tool_nest_language_data_analysis.R**). For further explanation please see the script annotations.
 
 **construction_dictionary.txt** contains the list of words representing 'intelligent' terminology used in article abstacts (for full details, see the Methods section of the paper and the R script). 
 
