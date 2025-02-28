@@ -180,7 +180,7 @@ for (i in 1:length(combined_data_abstracts$Alt_percent)){
 	}
 
 # create user friendly version of dataset for sharing
-sharing_data<-merge(combined_data[,c("Article.Title", "Abstract", "Times.Cited..All.Databases", "Behaviour", "Ape", "Corvus", "X2023.JIF", "Group")], combined_data_abstracts[,c("Article.Title", "Intel_percent", "Alt_percent")], by="Article.Title", all.x=TRUE)
+sharing_data<-merge(combined_data[,c("Article.Title", "Abstract", "Times.Cited..All.Databases", "Behaviour", "Ape", "Corvus", "X2023.JIF", "Group", "Publication.Year")], combined_data_abstracts[,c("Article.Title", "Intel_percent", "Alt_percent")], by="Article.Title", all.x=TRUE)
 str(sharing_data) # 7660 - 10 rows added during merging
 nrow(subset(sharing_data, duplicated(sharing_data$Article.Title))) # 18 duplicates - we should expect 8 remaining (i.e. the legitimate duplicates included in both the nest and tool datasets)
 rm_sharing_data<-subset(sharing_data, duplicated(paste(sharing_data$Article.Title, sharing_data$Behaviour))) # select articles to remove
@@ -188,5 +188,5 @@ sharing_data<-sharing_data[-as.numeric(rownames(rm_sharing_data)),] # remove the
 str(sharing_data) # 7650 rows
 sharing_data[sharing_data$Abstract=="",]$Abstract<-NA # replace blanks with NAs for abstracts
 colnames(sharing_data)<-c("Article.Title", "Abstract", "Citations", "Behaviour", "Great.Ape", "Corvus", "JIF", 
-"Subject", "Intel.percent", "Alt.percent") # rename columns
+"Subject", "Publication.Year", "Intel.percent", "Alt.percent") # rename columns
 write.csv(sharing_data, "tool_nest_language_data_sharing.csv", row.names=F) # write to file
