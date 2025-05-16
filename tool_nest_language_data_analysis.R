@@ -1,6 +1,6 @@
 ### setup ###
 
-# clear workspace & load data
+# clear workspace
 rm(list=ls())
 
 # load packages 
@@ -11,11 +11,12 @@ invisible(lapply(packages, library, character.only=TRUE)) # load packages
 # turn off scientific notation
 options(scipen=999)
 
-# load data
+# load & examine data
 processed_data<-read.csv("https://github.com/sally-e-street/tool-nest-language/raw/refs/heads/main/tool_nest_language_data_sharing.csv")
+str(processed_data)
 
 # descriptive statistics
-nrow(processed_data) # 7650 articles
+nrow(processed_data) # 7650 articles total
 summary(processed_data$Citations) # median = 4 citations
 table(processed_data$Behaviour) # 6108 nest building articles, 1542 tool use articles
 table(processed_data$Great.Ape) # 640 great ape articles
@@ -43,7 +44,7 @@ hist(processed_data$Intel.percent, main="", breaks=30, xlab="% 'intelligent' ter
 hist(processed_data$Alt.percent, main="", breaks=30, xlab="% alt 'intelligent' terms", las=1) # right-skewed/bimodal
 
 par(mfrow=c(1,2))
-hist(log10(processed_data$Intel.percent+1), main="", breaks=30, xlab="% 'intelligent' terms", las=1) # still right-skewed after log transformation
+hist(log10(processed_data$Intel.percent+1), main="", breaks=30, xlab="% 'intelligent' terms", las=1) # still right-skewed/bimodal after log transformation
 hist(log10(processed_data$Alt.percent+1), main="", breaks=30, xlab="% alt 'intelligent' terms", las=1) # still right-skewed/bimodal after log transformation
 
 par(mfrow=c(1,1))
@@ -56,15 +57,14 @@ plot(log10(processed_data[,c("Citations", "JIF", "Intel.percent", "Alt.percent")
 ### citation rates ###
 
 # descriptive statistics 
-aggregate(Citations~Behaviour, processed_data, FUN=length) 
 aggregate(Citations~Behaviour, processed_data, FUN=quantile)
 
 # wilcox test: citations in nest building versus tool use papers
 wilcox.test(Citations~Behaviour, processed_data)
 
 # repeat for great apes
-aggregate(Citations~Behaviour, subset(processed_data, Great.Ape=="Y"), FUN=length) 
-aggregate(Citations~Behaviour, subset(processed_data, Great.Ape=="Y"), FUN=quantile)
+aggregate(Citations~Behaviour, subset(processed_data, Great.Ape=="Y"), FUN=length) # sample sizes 
+aggregate(Citations~Behaviour, subset(processed_data, Great.Ape=="Y"), FUN=quantile) # quantiles
 wilcox.test(Citations~Behaviour, subset(processed_data, Great.Ape=="Y"))
 
 # repeat for Corvus
@@ -75,24 +75,23 @@ wilcox.test(Citations~Behaviour, subset(processed_data, Corvus=="Y"))
 # compare tool use in great apes vs. Corvus
 wilcox.test(subset(processed_data, Great.Ape=="Y" & Behaviour=="Tool")$Citations, subset(processed_data, Corvus=="Y" & Behaviour=="Tool")$Citations)
 
-# compare nest building in agreat pes vs. Corvus
+# compare nest building in great apes vs. Corvus
 wilcox.test(subset(processed_data, Great.Ape=="Y" & Behaviour=="Nest")$Citations, subset(processed_data, Corvus=="Y" & Behaviour=="Nest")$Citations)
 
 # repeat for general interest journals only
 aggregate(Citations~Behaviour, subset(processed_data, Subject=="General"), FUN=length) 
-aggregate(Citations~Behaviour, subset(processed_data, Subject =="General"), FUN=quantile)
+aggregate(Citations~Behaviour, subset(processed_data, Subject=="General"), FUN=quantile)
 wilcox.test(Citations~Behaviour, subset(processed_data, Subject =="General"))
 
-# repeat for cognition journals only
+# repeat for cognition focused journals only
 aggregate(Citations~Behaviour, subset(processed_data, Subject=="Cognition"), FUN=length) 
-aggregate(Citations~Behaviour, subset(processed_data, Subject =="Cognition"), FUN=quantile)
-wilcox.test(Citations~Behaviour, subset(processed_data, Subject =="Cognition"))
+aggregate(Citations~Behaviour, subset(processed_data, Subject=="Cognition"), FUN=quantile)
+wilcox.test(Citations~Behaviour, subset(processed_data, Subject=="Cognition"))
 
 
 ### journal impact factors & subjects ###
 
 # descriptive statistics 
-aggregate(JIF~Behaviour, processed_data, FUN=length) 
 aggregate(JIF~Behaviour, processed_data, FUN=quantile)
 
 # wilcox test
@@ -119,7 +118,7 @@ aggregate(JIF~Behaviour, subset(processed_data, Subject=="General"), FUN=length)
 aggregate(JIF~Behaviour, subset(processed_data, Subject=="General"), FUN=quantile)
 wilcox.test(JIF~Behaviour, subset(processed_data, Subject=="General"))
 
-# repeat for cognition journals only
+# repeat for cognition focused journals only
 aggregate(JIF~Behaviour, subset(processed_data, Subject=="Cognition"), FUN=length) 
 aggregate(JIF~Behaviour, subset(processed_data, Subject=="Cognition"), FUN=quantile)
 wilcox.test(JIF~Behaviour, subset(processed_data, Subject=="Cognition"))
@@ -131,7 +130,7 @@ table(processed_data$Subject, processed_data$Behaviour)
 table(subset(processed_data, Great.Ape=="Y")$Behaviour, subset(processed_data, Great.Ape=="Y")$Subject)
 table(subset(processed_data, Corvus=="Y")$Behaviour, subset(processed_data, Corvus=="Y")$Subject)
 
-# prop table for journal categories (converted to percentages acros rows)
+# proportions for journal categories*behaviour (converted to percentages, across rows)
 prop.table(table(processed_data$Behaviour, processed_data$Subject), 1)*100
 
 # chi-square test: general interest/not general interest vs. nests/tools
@@ -140,31 +139,31 @@ table(processed_data$General, processed_data$Behaviour, useNA="ifany")
 prop.table(table(processed_data$General, processed_data$Behaviour), 2)*100 # percentages down columns
 chisq.test(table(processed_data$General, processed_data$Behaviour))
 
-# chi-square test: cognition-focused/not cognition-focused vs. nests/tools
+# chi-square test: cognition focused/not cognition focused vs. nests/tools
 processed_data$Cognition<-ifelse(processed_data$Subject=="Cognition", "Y", "N")
 table(processed_data$Cognition, processed_data$Behaviour, useNA="ifany")
 prop.table(table(processed_data$Cognition, processed_data$Behaviour), 2)*100
 chisq.test(table(processed_data$Cognition, processed_data$Behaviour))
 
-# chi-square test: human-focused/not human-focused vs. nests/tools
+# chi-square test: human focused/not human focused vs. nests/tools
 processed_data$Anthro<-ifelse(processed_data$Subject=="Anthro", "Y", "N")
 table(processed_data$Anthro, processed_data$Behaviour, useNA="ifany")
 prop.table(table(processed_data$Anthro, processed_data$Behaviour), 2)*100
 chisq.test(table(processed_data$Anthro, processed_data$Behaviour))
 
-# chi-square test: ecology-focused/not ecology-focused vs. nests/tools
+# chi-square test: ecology focused/not ecology focused vs. nests/tools
 processed_data$Ecology<-ifelse(processed_data$Subject=="Ecology", "Y", "N")
 table(processed_data$Ecology, processed_data$Behaviour, useNA="ifany")
 prop.table(table(processed_data$Ecology, processed_data$Behaviour), 2)*100
 chisq.test(table(processed_data$Ecology, processed_data$Behaviour))
 
-# chi-square test: taxon-specific/not taxon-specific vs. nests/tools
+# chi-square test: taxon specific/not taxon specific vs. nests/tools
 processed_data$Taxon<-ifelse(processed_data$Subject=="Taxon", "Y", "N")
 table(processed_data$Taxon, processed_data$Behaviour, useNA="ifany")
 prop.table(table(processed_data$Taxon, processed_data$Behaviour), 2)*100
 chisq.test(table(processed_data$Taxon, processed_data$Behaviour))
 
-# chi-square test: applied focus/not applied focus vs. nests/tools
+# chi-square test: applied/not applied vs. nests/tools
 processed_data$Applied<-ifelse(processed_data$Subject=="Applied", "Y", "N")
 table(processed_data$Applied, processed_data$Behaviour, useNA="ifany")
 prop.table(table(processed_data$Applied, processed_data$Behaviour), 2)*100
@@ -173,14 +172,12 @@ chisq.test(table(processed_data$Applied, processed_data$Behaviour))
 ### abstract language ###
 
 # descriptive statistics 
-aggregate(Intel.percent~Behaviour, processed_data, FUN=length) 
 aggregate(Intel.percent~Behaviour, processed_data, FUN=quantile)
 
 # wilcox test
 wilcox.test(Intel.percent~Behaviour, processed_data)
 
 # repeat for alternative dictionary
-aggregate(Alt.percent~Behaviour, processed_data, FUN=length) 
 aggregate(Alt.percent~Behaviour, processed_data, FUN=quantile)
 wilcox.test(Alt.percent~Behaviour, processed_data)
 
@@ -287,10 +284,10 @@ dev.off()
 dev.new(height=4, width=10.5, unit="in")
 par(mfrow=(c(1,1))) # barplot for proportion of nest vs. tool use papers in each journal subject category
 processed_data$Subject<-factor(processed_data$Subject, levels=c("Ecology", "Applied", "Taxon", "Other_bio", "Zoology", "General", "Cognition", "Anthro")) # re-order groups for illustrative purposes
-xpos_bp_journals<-barplot(prop.table(table(processed_data$Behaviour, processed_data$Subject), 2), border=c("blue", "red"), col=c(rgb(0,0,1,0.5), rgb(1,0,0,0.5)), ylab="Proportion", xlab="", las=1, cex.axis=0.8, cex.lab=0.8, cex.names=0.8, names.arg=c("Ecology", "Applied", "Taxon", "Other bio.", "Zoology", "General", "Cognition", "Anthro")) # create the barplot and save the position of the x axis labels
+xpos_bt_journals<-barplot(prop.table(table(processed_data$Behaviour, processed_data$Subject), 2), border=c("blue", "red"), col=c(rgb(0,0,1,0.5), rgb(1,0,0,0.5)), ylab="Proportion", xlab="", las=1, cex.axis=0.8, cex.lab=0.8, cex.names=0.8, names.arg=c("Ecology", "Applied", "Taxon", "Other bio.", "Zoology", "General", "Cognition", "Anthro")) # create the barplot and save the position of the x axis labels
 abline(h=prop.table(table(subset(processed_data, !is.na(Subject))$Behaviour))[1], lty=2) # overall proportion of nest building papers
-text(x=xpos_bp_journals, y=0.03, table(processed_data$Behaviour, processed_data$Subject)[1,], col="blue", cex=0.8) # add frequencies for nest building papers
-text(x=xpos_bp_journals, y=0.97, table(processed_data$Behaviour, processed_data$Subject)[2,], col="red", cex=0.8) # add frequencies for tool use papers
+text(x=xpos_bt_journals, y=0.03, table(processed_data$Behaviour, processed_data$Subject)[1,], col="blue", cex=0.8) # add frequencies for nest building papers
+text(x=xpos_bt_journals, y=0.97, table(processed_data$Behaviour, processed_data$Subject)[2,], col="red", cex=0.8) # add frequencies for tool use papers
 
 # FIGURE 1 e
 dev.off()
@@ -403,7 +400,6 @@ for (i in 1:length(nest_words_year$Perc_matches)){
 	
 merged_words_year<-merge(tool_words_year, nest_words_year, by="Year", all=TRUE) # merge tool and nest matches by year
 colnames(merged_words_year)[2:3]<-c("Tool_matches", "Nest_matches") # rename columns
-merged_words_year[complete.cases(merged_words_year),]
 
 merged_words_year<-merged_words_year[complete.cases(merged_words_year),] # remove years without any abstracts
 merged_words_year<-subset(merged_words_year, Year<2024) # remove 2024 (incomplete year)
